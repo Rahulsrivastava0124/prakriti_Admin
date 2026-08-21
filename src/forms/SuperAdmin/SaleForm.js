@@ -168,6 +168,8 @@ import {
 
 import { retailerList } from "actions/superadmin/retailer.actions";
 
+import axios from "actions/axios";
+
 import { distributorList } from "actions/superadmin/distributor.actions";
 
 import { salesExecutiveList } from "actions/superadmin/salesExecutive.actions";
@@ -178,6 +180,7 @@ import {
   getRoleName,
   getUserDashboardRoute,
   convertGramToUnit,
+  objectToQuery,
 } from "src/helpers/helper";
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -224,6 +227,8 @@ class SaleForm extends React.Component {
 
       retailerList: this.props.retailerList,
       retailerListApiCall: false,
+
+      ownRetailerIds: [],
 
       distributorList: this.props.distributorList,
       distributorListApiCall: false,
@@ -595,6 +600,8 @@ class SaleForm extends React.Component {
       this.props.actions.adminList({ all: 1 });
 
       this.props.actions.retailerList({ all: 1 });
+
+      this.loadOwnRetailerIds();
 
       this.props.actions.distributorList({ all: 1 });
 
@@ -1476,7 +1483,15 @@ class SaleForm extends React.Component {
         label: "Add New Retailer",
         title: "Add Retailer",
         Form: RetailerForm,
-        refresh: () => this.props.actions.retailerList({ all: 1 }),
+        /* the retailer just added belongs to whoever added it, so the
+           ownership list has to be re-read alongside the team book or the new
+           row lands under the wrong heading */
+        refresh: () => {
+          this.props.actions.retailerList({ all: 1 });
+          if (this.isSalesExecutive) {
+            this.loadOwnRetailerIds();
+          }
+        },
       };
     }
 
@@ -2972,6 +2987,32 @@ class SaleForm extends React.Component {
       },
     );
   };
+
+  /**
+   * Which of the team's retailers this executive brought in. The list itself
+   * is the team's whole book, so ownership is asked for separately - straight
+   * from the API rather than through the store, whose retailer slice already
+   * holds that team book.
+   */
+  loadOwnRetailerIds = () => {
+    axios
+      .get(
+        `/superadmin/retailers${objectToQuery({ all: 1, my_retailer: 1 }, true)}`,
+      )
+      .then((response) => {
+        if (response.data.success) {
+          this.setState({
+            ownRetailerIds: (response.data.data.items || []).map(
+              (item) => item.id,
+            ),
+          });
+        }
+      })
+      .catch(() => {});
+  };
+
+  isOwnRetailer = (option) =>
+    this.state.ownRetailerIds.some((id) => String(id) === String(option.id));
 
   getUserList = () => {
     let userList = [];
@@ -4506,7 +4547,7 @@ class SaleForm extends React.Component {
     const userListGroupBy =
       this.isSalesExecutive && !this.state.isAssign
         ? (option) =>
-            option.id !== ADD_ADMIN_OPTION.id && option.is_my_retailer
+            option.id !== ADD_ADMIN_OPTION.id && this.isOwnRetailer(option)
               ? "Own Retailers"
               : "Team Retailers"
         : undefined;
@@ -4516,7 +4557,7 @@ class SaleForm extends React.Component {
        the list */
     if (userListGroupBy) {
       userListWithAddOption = _.sortBy(userListWithAddOption, (option) =>
-        option.id === ADD_ADMIN_OPTION.id ? 2 : option.is_my_retailer ? 0 : 1,
+        option.id === ADD_ADMIN_OPTION.id ? 2 : this.isOwnRetailer(option) ? 0 : 1,
       );
     }
 
