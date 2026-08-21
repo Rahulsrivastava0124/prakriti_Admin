@@ -4499,6 +4499,27 @@ class SaleForm extends React.Component {
       userListWithAddOption = [userIdValue, ...userListWithAddOption];
     }
 
+    /* A sales executive sells out of the team's whole book, so the picker
+       splits it: the retailers this executive brought in, then the rest.
+       "Add New Retailer" rides along with the team's group so it stays last
+       instead of opening a header of its own. */
+    const userListGroupBy =
+      this.isSalesExecutive && !this.state.isAssign
+        ? (option) =>
+            option.id !== ADD_ADMIN_OPTION.id && option.is_my_retailer
+              ? "Own Retailers"
+              : "Team Retailers"
+        : undefined;
+
+    /* grouping only reads right when the options are already ordered by group,
+       and that has to happen after the selected user and the add option join
+       the list */
+    if (userListGroupBy) {
+      userListWithAddOption = _.sortBy(userListWithAddOption, (option) =>
+        option.id === ADD_ADMIN_OPTION.id ? 2 : option.is_my_retailer ? 0 : 1,
+      );
+    }
+
     /* the company is picked for us, either from a sale on approval or after
        an inline admin creation, both wait on the user list to arrive */
     const selectingUser =
@@ -4727,6 +4748,7 @@ class SaleForm extends React.Component {
                     className="autocomplete-selectbox"
                     fullWidth
                     options={userListWithAddOption}
+                    groupBy={userListGroupBy}
                     value={userIdValue}
                     autoHighlight
                     getOptionLabel={(option) =>

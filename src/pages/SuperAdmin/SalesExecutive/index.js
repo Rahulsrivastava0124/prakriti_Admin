@@ -58,10 +58,15 @@ class SalesExecutivePage extends Component {
         display_name: 'Distributor'
       }];
     }
-    // The team's retailer book - every retailer brought in by this executive's
-    // distributor and the executives beside it, which is the same figure the
-    // executive sees on its own dashboard.
+    // Own Retailer is what this executive brought in; Total Retailer is the
+    // team's book - every retailer brought in by this executive's distributor
+    // and the executives beside it, the same figure the executive sees on its
+    // own dashboard.
     this.columns = [...this.columns, {
+      name: 'own_retailer',
+      display_name: 'Own Retailer',
+      isBold: true
+    }, {
       name: 'total_retailer',
       display_name: 'Total Retailer',
       isBold: true
@@ -152,7 +157,8 @@ class SalesExecutivePage extends Component {
       return {
         ...row,
         company_name_display: companyName,
-        total_retailer: row.total_retailer === undefined || row.total_retailer === null ? 0 : row.total_retailer
+        own_retailer: row.own_retailer ?? 0,
+        total_retailer: row.total_retailer ?? 0
       };
     });
   }
