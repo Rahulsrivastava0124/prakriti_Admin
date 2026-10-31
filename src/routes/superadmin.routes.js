@@ -63,6 +63,9 @@ const EmployeeViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Employe
 const SalesExecutivePage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive')));
 const SalesExecutiveCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/Create')));
 const SalesExecutiveEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/Edit')));
+/* Stocks listing opened from the new list icon beside the profile View on the
+   SE row. Admin already had this route; Super Admin was missing it. */
+const SalesExecutiveViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/View')));
 
 // worker
 /*const WorkerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Worker')));
@@ -616,6 +619,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'sales-executive/Edit/:id',
         element: <SalesExecutiveEditPage />
+      },
+      {
+        path: 'sales-executive/View/:id',
+        element: <SalesExecutiveViewPage />
       },
       {
         path: 'customers',

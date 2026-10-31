@@ -255,6 +255,13 @@ class EmployeeEditForm extends React.Component {
                     submitSuccess: true
                 }, () => {
                     this.loadListData();
+                    /* The Performance of the Month card above the table reads
+                       sale_target / visit_target / incentive from the salary
+                       structure in force today. A new or edited row changes
+                       those - and only this endpoint recomputes them - so
+                       without this re-fetch the panel keeps showing whatever
+                       was there before the save (zeros for a first-time save). */
+                    this.thisMonthPerformance();
                     this.resetFormData();
                     this.setState({
                         submitSuccess: false
@@ -275,6 +282,13 @@ class EmployeeEditForm extends React.Component {
                     submitSuccess: true
                 }, () => {
                     this.loadListData();
+                    /* The Performance of the Month card above the table reads
+                       sale_target / visit_target / incentive from the salary
+                       structure in force today. A new or edited row changes
+                       those - and only this endpoint recomputes them - so
+                       without this re-fetch the panel keeps showing whatever
+                       was there before the save (zeros for a first-time save). */
+                    this.thisMonthPerformance();
                     this.resetFormData();
                     this.setState({
                         submitSuccess: false
@@ -475,8 +489,77 @@ class EmployeeEditForm extends React.Component {
         return hasErr;
     }
 
+    /**
+     * The figures the Performance of the Month panel renders.
+     *
+     * Targets come from the salary structure in force this month: the latest
+     * row whose effective date falls on or before the end of the current month,
+     * the same rule the API applies. That row is already loaded for the table
+     * below, so it is used directly - an API that still compares against the
+     * first of the month answers with an older structure (or none), and the
+     * panel would never move after a save.
+     *
+     * Achieved figures are sums of payments and visits that only the API has,
+     * so they are kept as returned; percentages and remaining amounts are then
+     * recomputed against the right target.
+     */
+    getRenderedPerformance = () => {
+        const p = this.state.performance;
+        if (!p) return null;
+        /* the table is newest-first, 50 a page: the structure in force is on
+           page 1. Paging the table must not change the panel above it. */
+        if ((this.state.queryParams && this.state.queryParams.page) > 1) return p;
+
+        /* eff_date arrives MM/DD/YYYY (API date format 9); eff_date_display is
+           DD/MM/YYYY. Parse strictly so 10/31/2026 is never read day-first. */
+        const effOf = (row) => {
+            let d = moment(row.eff_date, 'MM/DD/YYYY', true);
+            if (!d.isValid()) d = moment(row.eff_date_display, 'DD/MM/YYYY', true);
+            if (!d.isValid()) d = moment(row.eff_date, 'YYYY-MM-DD', true);
+            return d.isValid() ? d : null;
+        };
+        /* local time, end of this month - not UTC, not today */
+        const monthEnd = moment().endOf('month');
+        const inForce = (this.state.salaries || [])
+            .map((row) => ({ row, eff: effOf(row) }))
+            .filter((x) => x.eff && !x.eff.isAfter(monthEnd, 'day'))
+            .sort((a, b) => b.eff.diff(a.eff) || (b.row.id || 0) - (a.row.id || 0))[0];
+        if (!inForce) return p;
+
+        const round2 = (n) => Math.round(n * 100) / 100;
+        const sale_target = parseFloat(inForce.row.target) || 0;
+        const visit_target = parseInt(inForce.row.visit_target, 10) || 0;
+        const incentive = round2(parseFloat(inForce.row.incentive) || 0);
+        const sale_achived = parseFloat(p.sale_achived) || 0;
+        const visit_achived = parseInt(p.visit_achived, 10) || 0;
+
+        /* same arithmetic as myPerformance.controller */
+        const percentOf = (got, target) =>
+            target > 0 ? Math.min(100, round2((got / target) * 100)) : (got > 0 ? 100 : 0);
+        const sale_achived_percent = percentOf(sale_achived, sale_target);
+        const visit_achived_percent = percentOf(visit_achived, visit_target);
+        const sale_due = sale_achived_percent === 100 ? 0 : round2(sale_target - sale_achived);
+        const visit_due = visit_achived_percent === 100 ? 0 : visit_target - visit_achived;
+
+        return {
+            ...p,
+            sale_target,
+            sale_target_display: displayAmount(sale_target),
+            visit_target,
+            incentive,
+            sale_achived_percent,
+            sale_achived_percent_display: sale_achived_percent + '%',
+            visit_achived_percent,
+            visit_achived_percent_display: visit_achived_percent + '%',
+            sale_due,
+            sale_due_display: displayAmount(sale_due),
+            visit_due,
+        };
+    };
+
     render() {
-        const { formValues, formErros, submitting, performance } = this.state;
+        const { formValues, formErros, submitting } = this.state;
+        const performance = this.getRenderedPerformance();
         
         return (
             <div>
