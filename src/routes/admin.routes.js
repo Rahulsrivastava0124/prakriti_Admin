@@ -129,6 +129,12 @@ const SalesExecutiveEditPage = Loadable(
 const SalesExecutiveViewPage = Loadable(
   lazy(() => import("../pages/SuperAdmin/SalesExecutive/View")),
 );
+/* The performance + salary profile page. Admin reuses the Super Admin
+   implementation - the API endpoint it calls (/superadmin/employees/fetch/:id)
+   is the same one Admin already reaches through the sales-executive list. */
+const SalesExecutiveProfilePage = Loadable(
+  lazy(() => import("../pages/SuperAdmin/Employee/View")),
+);
 const SalesExecutiveInvoiceTransactionLedgerPage = Loadable(
   lazy(() => import("../pages/SuperAdmin/SalesExecutive/Ledger")),
 );
@@ -418,6 +424,10 @@ const AdminRoutes = (isLoggedIn) => [
       {
         path: "sales-executive/View/:id",
         element: <SalesExecutiveViewPage />,
+      },
+      {
+        path: "sales-executive/profile/:id",
+        element: <SalesExecutiveProfilePage />,
       },
       {
         path: "sales-executive/invoice-transaction-ledger/:id",

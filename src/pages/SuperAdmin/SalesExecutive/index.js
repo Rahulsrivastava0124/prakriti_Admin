@@ -145,7 +145,12 @@ class SalesExecutivePage extends Component {
   }
 
   handleEmployeeView = (row) => {
-    this.props.navigate('/super-admin/employees/view/' + row.id);
+    /* Each role has its own URL prefix. Admin reuses the Super Admin profile
+       page under its own sales-executive namespace. */
+    const path = this.isAdmin
+      ? '/admin/sales-executive/profile/' + row.id
+      : '/super-admin/employees/view/' + row.id;
+    this.props.navigate(path);
   }
 
   handleDelete = (row) => {
@@ -180,12 +185,23 @@ class SalesExecutivePage extends Component {
     ];
 
     if(this.isAdmin){
-      tableActions = [...tableActions, {
-        label: 'View',
-        onClick: this.handleView,
-        color: 'primary',
-        show: hasPermission(this.state.permissions, 'sales_executive', 'view')
-      }];
+      tableActions = [
+        {
+          /* profile: performance of the month + salary structure. Shown first
+             so the eye icon reads as "see this executive", with the stock list
+             sitting next to it under its own list icon. */
+          label: 'View',
+          onClick: this.handleEmployeeView,
+          color: 'primary',
+          show: hasPermission(this.state.permissions, 'sales_executive', 'view')
+        },
+        {
+          label: 'Stocks',
+          onClick: this.handleView,
+          color: 'primary',
+          show: hasPermission(this.state.permissions, 'sales_executive', 'view')
+        },
+      ].concat(tableActions);
     }
 
     if(this.isDistributor){
@@ -196,12 +212,22 @@ class SalesExecutivePage extends Component {
         show: hasPermission(this.state.permissions, 'sales_executive', 'view')
       }];
     }else if(this.isSuperAdmin){
-      tableActions = [{
-        label: 'View',
-        onClick: this.handleEmployeeView,
-        color: 'primary',
-        show: hasPermission(this.state.permissions, 'sales_executive', 'view')
-      }].concat(tableActions);
+      tableActions = [
+        {
+          /* profile: performance of the month + salary structure */
+          label: 'View',
+          onClick: this.handleEmployeeView,
+          color: 'primary',
+          show: hasPermission(this.state.permissions, 'sales_executive', 'view')
+        },
+        {
+          /* list icon, matches the Admin action beside it */
+          label: 'Stocks',
+          onClick: this.handleView,
+          color: 'primary',
+          show: hasPermission(this.state.permissions, 'sales_executive', 'view')
+        },
+      ].concat(tableActions);
     }
 
     return tableActions;
