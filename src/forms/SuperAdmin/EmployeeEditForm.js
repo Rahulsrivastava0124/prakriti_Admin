@@ -574,7 +574,7 @@ class EmployeeEditForm extends React.Component {
                             </Stack>
         </Grid>*/}
 
-                            <Grid item xs={3} className='create-input'>
+                            <Grid item xs={12} sm={6} md={3} className='create-input'>
                                 <TextField
                                     label="Employee Name"
                                     variant="outlined"
@@ -585,7 +585,7 @@ class EmployeeEditForm extends React.Component {
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={3} className='create-input'>
+                            <Grid item xs={12} sm={6} md={3} className='create-input'>
                                 <TextField
                                     label="Email"
                                     variant="outlined"
@@ -596,7 +596,7 @@ class EmployeeEditForm extends React.Component {
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={2} className='create-input'>
+                            <Grid item xs={6} sm={4} md={2} className='create-input'>
                                 <TextField
                                     label="Contact No"
                                     variant="outlined"
@@ -608,7 +608,7 @@ class EmployeeEditForm extends React.Component {
                                     onInput={(e) => validateInteger(e)}
                                 />
                             </Grid>
-                            <Grid item xs={2} className='create-input'>
+                            <Grid item xs={6} sm={4} md={2} className='create-input'>
                                 <FormControl fullWidth>
                                     <InputLabel>Role</InputLabel>
                                     <Select
@@ -627,7 +627,7 @@ class EmployeeEditForm extends React.Component {
                                     </Select>
                                 </FormControl>
                             </Grid>
-                            <Grid item xs={2} className='create-input'>
+                            <Grid item xs={12} sm={4} md={2} className='create-input'>
                                 <TextField
                                     label="Weekly Holidays"
                                     variant="outlined"
@@ -656,7 +656,7 @@ class EmployeeEditForm extends React.Component {
                                             <Grid item xs={12} className='create-input'>
                                                 <b>Achieved</b>
                                             </Grid>
-                                            <Grid item xs={6} md={12} className='create-input'>
+                                            <Grid item xs={12} sm={6} md={12} className='create-input'>
                                                 <FormControl fullWidth sx={{ m: 1 }} className='left-radius'>
                                                     <TextField
                                                         label="Sale Achieved"
@@ -670,7 +670,7 @@ class EmployeeEditForm extends React.Component {
                                                     />
                                                 </FormControl>
                                             </Grid>
-                                            <Grid item xs={6} md={12} className='create-input'>
+                                            <Grid item xs={12} sm={6} md={12} className='create-input'>
                                                 <FormControl fullWidth sx={{ m: 1 }} className='left-radius'>
                                                     <TextField
                                                         label="Visit Achieved"
@@ -751,7 +751,7 @@ class EmployeeEditForm extends React.Component {
                                                     />
                                                 </FormControl>
                                             </Grid>
-                                            <Grid item xs={6} md={6} className='create-input'>
+                                            <Grid item xs={12} sm={6} md={6} className='create-input'>
                                                 <FormControl fullWidth sx={{ m: 1 }} className='left-radius'>
                                                     <TextField
                                                         label="Incentive"
@@ -786,7 +786,7 @@ class EmployeeEditForm extends React.Component {
                                         <Button variant="contained" className='conf-button' onClick={this.handleSubmit}>Add new</Button>
                                     </Stack>
                                 </Grid>
-                                <Grid item xs={2.4} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2.4} className='create-input'>
                                     <TextField
                                         label="Gross"
                                         variant="outlined"
@@ -801,7 +801,7 @@ class EmployeeEditForm extends React.Component {
                                     />
                                 </Grid>
 
-                                <Grid item xs={2.4} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2.4} className='create-input'>
                                     <TextField
                                         label="Basic Salary"
                                         variant="outlined"
@@ -816,7 +816,7 @@ class EmployeeEditForm extends React.Component {
                                     />
                                 </Grid>
 
-                                <Grid item xs={2.6}>
+                                <Grid item xs={12} sm={6} md={2.6}>
                                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                                         <DatePicker
                                             label="Effective Date"
@@ -829,7 +829,7 @@ class EmployeeEditForm extends React.Component {
                                     </LocalizationProvider>
                                 </Grid>
 
-                                <Grid item xs={2} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2} className='create-input'>
                                     <FormControl fullWidth error={formErros.is_epf}>
                                         <InputLabel>EPF</InputLabel>
                                         <Select
@@ -845,7 +845,7 @@ class EmployeeEditForm extends React.Component {
                                     </FormControl>
                                 </Grid>
 
-                                <Grid item xs={2.6} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2.6} className='create-input'>
                                     <FormControl fullWidth error={formErros.is_medical}>
                                         <InputLabel>Medical</InputLabel>
                                         <Select
@@ -860,7 +860,7 @@ class EmployeeEditForm extends React.Component {
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid item xs={2} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2} className='create-input'>
                                     <TextField
                                         label="HRA Percent"
                                         variant="outlined"
@@ -875,7 +875,7 @@ class EmployeeEditForm extends React.Component {
                                         onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
-                                <Grid item xs={2} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2} className='create-input'>
                                     <TextField
                                         label="Convince Percent"
                                         variant="outlined"
@@ -890,9 +890,9 @@ class EmployeeEditForm extends React.Component {
                                         onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
-                                <Grid item xs={2} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2} className='create-input'>
                                     <TextField
-                                        label="EPF Employee Percent"
+                                        label="EPF Employee %"
                                         variant="outlined"
                                         fullWidth
                                         value={formValues.epf_employee_percent}
@@ -905,9 +905,9 @@ class EmployeeEditForm extends React.Component {
                                         onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
-                                <Grid item xs={2} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2} className='create-input'>
                                     <TextField
-                                        label="EPF Employeer Percent"
+                                        label="EPF Employer %"
                                         variant="outlined"
                                         fullWidth
                                         value={formValues.epf_employer_percent}
@@ -920,9 +920,9 @@ class EmployeeEditForm extends React.Component {
                                         onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
-                                <Grid item xs={2} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2} className='create-input'>
                                     <TextField
-                                        label="Medical Employee Percent"
+                                        label="Medical Employee %"
                                         variant="outlined"
                                         fullWidth
                                         value={formValues.medical_employee_percent}
@@ -935,9 +935,9 @@ class EmployeeEditForm extends React.Component {
                                         onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
-                                <Grid item xs={2} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2} className='create-input'>
                                     <TextField
-                                        label="Medical Employeer Percent"
+                                        label="Medical Employer %"
                                         variant="outlined"
                                         fullWidth
                                         value={formValues.medical_employer_percent}
@@ -951,7 +951,7 @@ class EmployeeEditForm extends React.Component {
                                     />
                                 </Grid>
 
-                                <Grid item xs={2.4} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2.4} className='create-input'>
                                     <TextField
                                         label="Target"
                                         variant="outlined"
@@ -967,7 +967,7 @@ class EmployeeEditForm extends React.Component {
                                     />
                                 </Grid>
 
-                                <Grid item xs={2.4} className='create-input'>
+                                <Grid item xs={6} sm={6} md={2.4} className='create-input'>
                                     <TextField
                                         label="Visit Target"
                                         variant="outlined"
@@ -984,7 +984,7 @@ class EmployeeEditForm extends React.Component {
                                 {
                                     formValues.target ?
                                     <>
-                                    <Grid item xs={2.6} className='create-input'>
+                                    <Grid item xs={6} sm={6} md={2.6} className='create-input'>
                                         <TextField
                                             label="Incentive"
                                             variant="outlined"
@@ -998,7 +998,7 @@ class EmployeeEditForm extends React.Component {
                                             onInput={(e) => validateNumber(e)} 
                                         />
                                     </Grid>
-                                    <Grid item xs={2} className='create-input'>
+                                    <Grid item xs={6} sm={6} md={2} className='create-input'>
                                         <TextField
                                             variant="outlined"
                                             fullWidth
@@ -1011,7 +1011,7 @@ class EmployeeEditForm extends React.Component {
                                     : null
                                 }
 
-                                <Grid item xs={2}>
+                                <Grid item xs={12} sm={12} md={2}>
                                     <Stack spacing={1} direction="row" className='modal-button-area ratn-footer-buttons'>
                                         <Button variant="contained" className='conf-button' onClick={this.handleSubmit}>Save</Button>
                                     </Stack>

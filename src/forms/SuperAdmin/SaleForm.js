@@ -439,6 +439,9 @@ class SaleForm extends React.Component {
 
       return_amount: 0,
 
+      // calculated return amount - the most the editable Return Amount may be
+      return_amount_max: 0,
+
       return_from_wallet: 0,
 
       product_amount: 0,
@@ -448,6 +451,11 @@ class SaleForm extends React.Component {
       return_charge: 0,
 
       return_report_charge: 0,
+
+      // report charge the returned products carry, and whether it is deducted
+      report_charge_available: 0,
+
+      apply_report_charge: true,
 
       return_tax_charge: 0,
 
@@ -3547,6 +3555,35 @@ class SaleForm extends React.Component {
     );
   };
 
+  /* rows the header checkbox toggles - material rows need a weight, so they stay one at a time */
+  getBulkReturnIndexes = () =>
+    this.state.formValues.products.reduce((acc, p, i) => {
+      if (!p.is_return && p.product_type != "material" && this.state.return_products[i]) acc.push(i);
+      return acc;
+    }, []);
+
+  handleReturnSelectAll = (checked) => {
+    const { formValues, return_products } = this.state;
+    const indexes = this.getBulkReturnIndexes();
+
+    if (checked && this.hasReturn().will_return_charge_apply) {
+      const categories = new Set(
+        formValues.products
+          .filter((p, i) => !p.is_return && (indexes.includes(i) || return_products[i]?.is_return))
+          .map((p) => p.category_id),
+      );
+      if (categories.size > 1) {
+        return this.props.enqueueSnackbar(
+          "You can't return different category product in one invoice.",
+          { variant: "error" },
+        );
+      }
+    }
+
+    indexes.forEach((i) => (return_products[i].is_return = checked));
+    this.setState({ return_products }, this.calculateReturnAmount);
+  };
+
   handleReturn = () => {
     const { total_charge_for_return, formValues, return_from_wallet } =
       this.state;
@@ -3631,7 +3668,7 @@ class SaleForm extends React.Component {
 
       return_data: this.state.formValues,
 
-      return_amount: this.state.return_amount,
+      return_amount: parseFloat(this.state.return_amount) || 0,
 
       product_amount: this.state.product_amount,
 
@@ -3789,6 +3826,7 @@ class SaleForm extends React.Component {
       return_charge = 0,
       hasCertifiedProduct = 0,
       return_report_charge = 0,
+      report_charge_available = 0,
       return_tax_charge = 0,
       applicable_discount = 0,
       total_charge_for_return = 0,
@@ -3993,6 +4031,9 @@ class SaleForm extends React.Component {
       return_report_charge =
         return_report_charge_per_product * hasCertifiedProduct;
 
+      report_charge_available = return_report_charge;
+      if (!this.state.apply_report_charge) return_report_charge = 0;
+
       return_amount = return_amount - return_report_charge;
 
       total_charge_for_return += return_report_charge;
@@ -4110,6 +4151,8 @@ class SaleForm extends React.Component {
 
       return_report_charge: priceFormat(return_report_charge, true),
 
+      report_charge_available: priceFormat(report_charge_available, true),
+
       return_tax_charge: priceFormat(return_tax_charge, true),
 
       hasCertifiedProduct,
@@ -4126,6 +4169,8 @@ class SaleForm extends React.Component {
     this.setState({
       return_amount: priceFormat(return_amount, true),
 
+      return_amount_max: priceFormat(return_amount, true),
+
       product_amount: priceFormat(product_amount, true),
 
       product_amount_without_report_charge: priceFormat(
@@ -4136,6 +4181,8 @@ class SaleForm extends React.Component {
       return_charge: priceFormat(return_charge, true),
 
       return_report_charge: priceFormat(return_report_charge, true),
+
+      report_charge_available: priceFormat(report_charge_available, true),
 
       return_tax_charge: priceFormat(return_tax_charge, true),
 
@@ -5586,6 +5633,22 @@ class SaleForm extends React.Component {
                           );
                         })()}
                       </TableCell>
+                    ) : !this.state.isCreateFrom ? (
+                      <TableCell sx={{ width: '30px' }}>
+                        {(() => {
+                          const indexes = this.getBulkReturnIndexes();
+                          const picked = indexes.filter((i) => this.state.return_products[i].is_return).length;
+                          return indexes.length ? (
+                            <Checkbox
+                              size="small"
+                              checked={picked === indexes.length}
+                              indeterminate={picked > 0 && picked < indexes.length}
+                              sx={{ color: '#fff', '&.Mui-checked, &.MuiCheckbox-indeterminate': { color: '#fff' } }}
+                              onChange={(e) => this.handleReturnSelectAll(e.target.checked)}
+                            />
+                          ) : null;
+                        })()}
+                      </TableCell>
                     ) : (
                       <TableCell sx={{ width: '30px' }}></TableCell>
                     )}
@@ -6927,38 +6990,6 @@ class SaleForm extends React.Component {
                   </>
                 ) : (
                   <>
-                    <Grid item xs={12} md={12} className="pt-5">
-                      <Grid
-                        container
-                        spacing={2}
-                        className="display_center justify-content-end"
-                      >
-                        <Grid item xs={4} md={6} className="text-right pt-0">
-                          Return Product Amt
-                        </Grid>
-
-                        <Grid item xs={5} md={6} className="pt-0">
-                          <TextField
-                            className="ft-amount"
-                            fullWidth
-                            value={
-                              this.state.product_amount_without_report_charge
-                            }
-                            disabled
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  ₹
-                                </InputAdornment>
-                              ),
-
-                              className: "non_disable_text",
-                            }}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Grid>
-
                     {formValues.due_amount == 0 &&
                     this.state.return_discount > 0 ? (
                       <Grid item xs={12} md={12} className="pt-5">
@@ -6991,6 +7022,38 @@ class SaleForm extends React.Component {
                         </Grid>
                       </Grid>
                     ) : null}
+
+                    <Grid item xs={12} md={12} className="pt-5">
+                      <Grid
+                        container
+                        spacing={2}
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          Return Product Amt
+                        </Grid>
+
+                        <Grid item xs={5} md={6} className="pt-0">
+                          <TextField
+                            className="ft-amount"
+                            fullWidth
+                            value={
+                              this.state.product_amount_without_report_charge
+                            }
+                            disabled
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  ₹
+                                </InputAdornment>
+                              ),
+
+                              className: "non_disable_text",
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Grid>
 
                     {formValues.due_amount == 0 &&
                     formValues.have_return_charge ? (
@@ -7025,7 +7088,7 @@ class SaleForm extends React.Component {
                       </Grid>
                     ) : null}
 
-                    {this.state.return_report_charge > 0 ? (
+                    {this.state.report_charge_available > 0 ? (
                       <Grid item xs={12} md={12} className="pt-5">
                         <Grid
                           container
@@ -7033,14 +7096,36 @@ class SaleForm extends React.Component {
                           className="display_center justify-content-end"
                         >
                           <Grid item xs={4} md={6} className="text-right pt-0">
-                            <b>Report Charge</b>
+                            <FormControlLabel
+                              sx={{ mr: 0 }}
+                              control={
+                                <Checkbox
+                                  size="small"
+                                  checked={this.state.apply_report_charge}
+                                  onChange={(e) =>
+                                    this.setState(
+                                      { apply_report_charge: e.target.checked },
+                                      this.calculateReturnAmount,
+                                    )
+                                  }
+                                />
+                              }
+                              label={<b>Report Charge</b>}
+                            />
                           </Grid>
 
                           <Grid item xs={5} md={6} className="pt-0">
                             <TextField
                               className="ft-amount"
                               fullWidth
-                              value={this.state.return_report_charge}
+                              value={this.state.report_charge_available}
+                              sx={{
+                                "& input": {
+                                  textDecoration: this.state.apply_report_charge
+                                    ? "none"
+                                    : "line-through",
+                                },
+                              }}
                               disabled
                               InputProps={{
                                 startAdornment: (
@@ -7126,7 +7211,7 @@ class SaleForm extends React.Component {
                     ) : null}
 
                     {formValues.due_amount == 0 &&
-                    this.state.return_amount > 0 ? (
+                    this.state.return_amount_max > 0 ? (
                       <Grid item xs={12} md={12} className="pt-5">
                         <Grid
                           container
@@ -7143,9 +7228,18 @@ class SaleForm extends React.Component {
                               fullWidth
                               value={this.state.return_amount}
                               onInput={(e) => validateNumber(e)}
-                              onChange={(e) =>
-                                this.setState({ return_amount: e.target.value })
-                              }
+                              onChange={(e) => {
+                                const max = parseFloat(this.state.return_amount_max);
+                                if (parseFloat(e.target.value) > max) {
+                                  this.props.enqueueSnackbar(
+                                    `Return amount can't be more than ₹${max}.`,
+                                    { variant: "error" },
+                                  );
+                                  return this.setState({ return_amount: max });
+                                }
+                                this.setState({ return_amount: e.target.value });
+                              }}
+                              helperText={`Max ₹${this.state.return_amount_max}`}
                               InputProps={{
                                 startAdornment: (
                                   <InputAdornment position="start">
