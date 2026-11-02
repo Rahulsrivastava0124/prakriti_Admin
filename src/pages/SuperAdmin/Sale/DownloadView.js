@@ -902,10 +902,11 @@ class SaleViewPage extends React.Component {
                                   0);
                             });
                           }
-                          /* returned rows get their own block below */
-                          return sale.subCatItems
-                            .filter((row) => !row.is_return)
-                            .map((row, i) => {
+                          /* billed rows first, then the returned ones crossed out */
+                          return [
+                            ...sale.subCatItems.filter((row) => !row.is_return),
+                            ...sale.subCatItems.filter((row) => row.is_return),
+                          ].map((row, i) => {
                             const makingCharge =
                               makingChargeMap[
                                 row.hsn + (row.is_return ? "|returned" : "")
