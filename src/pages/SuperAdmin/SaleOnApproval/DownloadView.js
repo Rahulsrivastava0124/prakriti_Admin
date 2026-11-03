@@ -947,8 +947,8 @@ class SaleViewPage extends React.Component {
                               materialTotals[key].weight +=
                                 parseFloat(mat.weight) || 0;
                               const amt =
-                                (parseFloat(mat.weight) || 0) *
-                                (parseFloat(mat.rate) || 0);
+                                (mat.material_cost != null /* after the discount */ ? parseFloat(mat.material_cost) || 0 : (parseFloat(mat.weight) || 0) *
+                                (parseFloat(mat.rate) || 0));
                               materialTotals[key].amount += amt;
                             });
                           });
@@ -1074,7 +1074,7 @@ class SaleViewPage extends React.Component {
                                         fontWeight: isGold ? 600 : 400,
                                       }}
                                     >
-                                      × ₹{formatIndianNumber(data.rate)}
+                                      × ₹{formatIndianNumber((data.weight ? data.amount / data.weight : data.rate))}
                                     </TableCell>
                                     <TableCell
                                       colSpan={4}
@@ -1112,6 +1112,30 @@ class SaleViewPage extends React.Component {
                                   </TableCell>
                                 </TableRow>
                               )}
+                              {reportAmt > 0 && (
+                                <TableRow
+                                  sx={{
+                                    "& td": {
+                                      borderBottom: "none",
+                                      padding: "2px 16px",
+                                    },
+                                  }}
+                                >
+                                  <TableCell
+                                    colSpan={9}
+                                    style={{ fontSize: "13px", color: "#555" }}
+                                  >
+                                    Report Charge ({parseFloat(sale.report_qty) || 0} pcs ×{" "}
+                                    ₹{(parseFloat(sale.report_charge) || 0).toFixed(2)})
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={3}
+                                    style={{ fontSize: "13px", color: "#555" }}
+                                  >
+                                    ₹{reportAmt.toFixed(2)}
+                                  </TableCell>
+                                </TableRow>
+                              )}
                               <TableRow>
                                 <TableCell
                                   colSpan={9}
@@ -1136,50 +1160,9 @@ class SaleViewPage extends React.Component {
                                     borderBottom: "none",
                                   }}
                                 >
-                                  ₹{totalTaxableAmt.toFixed(2)}
+                                  ₹{(totalTaxableAmt + reportAmt).toFixed(2)}
                                 </TableCell>
                               </TableRow>
-                              {reportAmt > 0 && (
-                                <TableRow>
-                                  <TableCell
-                                    colSpan={2}
-                                    style={{
-                                      fontSize: "15px",
-                                      fontWeight: 700,
-                                      color: "#1E2746",
-                                      borderBottom: "none",
-                                    }}
-                                  >
-                                    Report Charges :
-                                  </TableCell>
-                                  <TableCell
-                                    colSpan={7}
-                                    style={{
-                                      fontSize: "13px",
-                                      color: "#555",
-                                      borderBottom: "none",
-                                    }}
-                                  >
-                                    {parseFloat(sale.report_qty) || 0} Pics x{" "}
-                                    {(
-                                      parseFloat(sale.report_charge) || 0
-                                    ).toFixed(2)}{" "}
-                                    =
-                                  </TableCell>
-                                  <TableCell
-                                    colSpan={3}
-                                    style={{
-                                      fontSize: "15px",
-                                      fontWeight: 700,
-                                      color: "#1E2746",
-                                      textAlign: "right",
-                                      borderBottom: "none",
-                                    }}
-                                  >
-                                    ₹{formatIndianNumber(reportAmt)}
-                                  </TableCell>
-                                </TableRow>
-                              )}
                               {(() => {
                                 const discount =
                                   discountAmt > 0 ? discountAmt : 0;
@@ -1248,8 +1231,6 @@ class SaleViewPage extends React.Component {
                         const igst = parseFloat(sale.igst_tax) || 0;
                         const cgst = parseFloat(sale.cgst_tax) || 0;
                         const sgst = parseFloat(sale.sgst_tax) || 0;
-                        const productTax =
-                          (igst > 0 ? igst : cgst + sgst) - rTax;
                         const reportTaxPerc =
                           parseFloat(sale.report_tax_percentage) || 0;
                         const totalPayableAmt =
@@ -1260,6 +1241,9 @@ class SaleViewPage extends React.Component {
                             ),
                           ) || 0;
                         const totalTaxAmt = igst > 0 ? igst : cgst + sgst;
+                        /* the stored GST carries the report tax too; it has its own line above,
+                           so the GST lines show the products' share and Tax adds them up */
+                        const productGst = Math.max(0, totalTaxAmt - rTax);
                         const finalDiscount =
                           parseFloat(
                             String(sale.discount || "0").replace(
@@ -1283,20 +1267,11 @@ class SaleViewPage extends React.Component {
                                 <span>₹{formatIndianNumber(rTax)}</span>
                               </div>
                             )}
-                            <div className="invoice-totals-line">
-                              <span>Tax</span>
-                              <span>
-                                ₹
-                                {formatIndianNumber(
-                                  productTax > 0 ? productTax : 0,
-                                )}
-                              </span>
-                            </div>
                             {igst > 0 ? (
                               <div className="invoice-totals-line">
                                 <span style={{ fontWeight: 700 }}>IGST</span>
                                 <span style={{ fontWeight: 700 }}>
-                                  ₹{formatIndianNumber(igst)}
+                                  ₹{formatIndianNumber(productGst)}
                                 </span>
                               </div>
                             ) : cgst > 0 || sgst > 0 ? (
@@ -1304,17 +1279,24 @@ class SaleViewPage extends React.Component {
                                 <div className="invoice-totals-line">
                                   <span style={{ fontWeight: 700 }}>CGST</span>
                                   <span style={{ fontWeight: 700 }}>
-                                    ₹{formatIndianNumber(cgst)}
+                                    ₹{formatIndianNumber(productGst / 2)}
                                   </span>
                                 </div>
                                 <div className="invoice-totals-line">
                                   <span style={{ fontWeight: 700 }}>SGST</span>
                                   <span style={{ fontWeight: 700 }}>
-                                    ₹{formatIndianNumber(sgst)}
+                                    ₹{formatIndianNumber(productGst / 2)}
                                   </span>
                                 </div>
                               </>
                             ) : null}
+                            {/* all of it - product GST plus the report tax, i.e. CGST + SGST (or IGST) */}
+                            <div className="invoice-totals-line">
+                              <span style={{ fontWeight: 700 }}>Tax</span>
+                              <span style={{ fontWeight: 700 }}>
+                                ₹{formatIndianNumber(totalTaxAmt > 0 ? totalTaxAmt : 0)}
+                              </span>
+                            </div>
                             <div className="invoice-totals-line">
                               <span>Discount</span>
                               <span>
@@ -1587,8 +1569,8 @@ class SaleViewPage extends React.Component {
                                     materialTotals[key].weight +=
                                       parseFloat(item.weight) || 0;
                                     const amt =
-                                      (parseFloat(item.weight) || 0) *
-                                      (parseFloat(item.rate) || 0);
+                                      (item.material_cost != null /* after the discount */ ? parseFloat(item.material_cost) || 0 : (parseFloat(item.weight) || 0) *
+                                      (parseFloat(item.rate) || 0));
                                     materialTotals[key].amount += amt;
                                     totalTax += (amt * taxPercent) / 100;
                                   });
@@ -1653,7 +1635,7 @@ class SaleViewPage extends React.Component {
                                             color: "#555",
                                           }}
                                         >
-                                          × ₹{data.rate.toFixed(2)}
+                                          × ₹{(data.weight ? data.amount / data.weight : data.rate).toFixed(2)}
                                         </TableCell>
                                         <TableCell
                                           colSpan={4}
@@ -2163,7 +2145,7 @@ function SubCatRow(props) {
     .join("\n")
     .replace(/\n/g, "<br/>");
   let materialRates = row.material
-    .map((itm) => itm.rate.toFixed(2))
+    .map((itm) => /* rate after discount, so it matches the amount charged */ (itm.material_cost != null && parseFloat(itm.weight) ? parseFloat(itm.material_cost) / parseFloat(itm.weight) : parseFloat(itm.rate)).toFixed(2))
     .join("\n")
     .replace(/\n/g, "<br/>");
 

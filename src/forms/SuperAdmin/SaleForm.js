@@ -3547,6 +3547,35 @@ class SaleForm extends React.Component {
     );
   };
 
+  /* rows the header checkbox toggles - material rows need a weight, so they stay one at a time */
+  getBulkReturnIndexes = () =>
+    this.state.formValues.products.reduce((acc, p, i) => {
+      if (!p.is_return && p.product_type != "material" && this.state.return_products[i]) acc.push(i);
+      return acc;
+    }, []);
+
+  handleReturnSelectAll = (checked) => {
+    const { formValues, return_products } = this.state;
+    const indexes = this.getBulkReturnIndexes();
+
+    if (checked && this.hasReturn().will_return_charge_apply) {
+      const categories = new Set(
+        formValues.products
+          .filter((p, i) => !p.is_return && (indexes.includes(i) || return_products[i]?.is_return))
+          .map((p) => p.category_id),
+      );
+      if (categories.size > 1) {
+        return this.props.enqueueSnackbar(
+          "You can't return different category product in one invoice.",
+          { variant: "error" },
+        );
+      }
+    }
+
+    indexes.forEach((i) => (return_products[i].is_return = checked));
+    this.setState({ return_products }, this.calculateReturnAmount);
+  };
+
   handleReturn = () => {
     const { total_charge_for_return, formValues, return_from_wallet } =
       this.state;
@@ -7125,6 +7154,37 @@ class SaleForm extends React.Component {
                       </Grid>
                     ) : null}
 
+                    {/* what the customer has paid on this invoice, to weigh the return against */}
+                    <Grid item xs={12} md={12} className="pt-5">
+                      <Grid
+                        container
+                        spacing={2}
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          Paid Amount
+                        </Grid>
+
+                        <Grid item xs={5} md={6} className="pt-0">
+                          <TextField
+                            className="ft-amount"
+                            fullWidth
+                            value={parseFloat(formValues.paid_amount) || 0}
+                            disabled
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  ₹
+                                </InputAdornment>
+                              ),
+
+                              className: "non_disable_text",
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Grid>
+
                     {formValues.due_amount == 0 &&
                     this.state.return_amount > 0 ? (
                       <Grid item xs={12} md={12} className="pt-5">
@@ -7143,9 +7203,18 @@ class SaleForm extends React.Component {
                               fullWidth
                               value={this.state.return_amount}
                               onInput={(e) => validateNumber(e)}
-                              onChange={(e) =>
-                                this.setState({ return_amount: e.target.value })
-                              }
+                              onChange={(e) => {
+                                const max = parseFloat(this.state.return_amount_max);
+                                if (parseFloat(e.target.value) > max) {
+                                  this.props.enqueueSnackbar(
+                                    `Return amount can't be more than ₹${max}.`,
+                                    { variant: "error" },
+                                  );
+                                  return this.setState({ return_amount: max });
+                                }
+                                this.setState({ return_amount: e.target.value });
+                              }}
+                              helperText={`Max ₹${this.state.return_amount_max}`}
                               InputProps={{
                                 startAdornment: (
                                   <InputAdornment position="start">

@@ -647,8 +647,8 @@ class PurchaseViewPage extends React.Component {
                               materialTotals[key].weight +=
                                 parseFloat(mat.weight) || 0;
                               const amt =
-                                (parseFloat(mat.weight) || 0) *
-                                (parseFloat(mat.rate) || 0);
+                                (mat.material_cost != null /* after the discount */ ? parseFloat(mat.material_cost) || 0 : (parseFloat(mat.weight) || 0) *
+                                (parseFloat(mat.rate) || 0));
                               materialTotals[key].amount += amt;
                             });
                           });
@@ -695,7 +695,7 @@ class PurchaseViewPage extends React.Component {
                                     colSpan={2}
                                     style={{ fontSize: "13px", color: "#555" }}
                                   >
-                                    × ₹{formatIndianNumber(data.rate)}
+                                    × ₹{formatIndianNumber((data.weight ? data.amount / data.weight : data.rate))}
                                   </TableCell>
                                   <TableCell
                                     colSpan={3}
@@ -1283,7 +1283,7 @@ function SubCatRow(props) {
     .join("\n")
     .replace(/\n/g, "<br/>");
   let materialRates = row.material
-    .map((itm) => itm.rate.toFixed(2))
+    .map((itm) => /* rate after discount, so it matches the amount charged */ (itm.material_cost != null && parseFloat(itm.weight) ? parseFloat(itm.material_cost) / parseFloat(itm.weight) : parseFloat(itm.rate)).toFixed(2))
     .join("\n")
     .replace(/\n/g, "<br/>");
 
