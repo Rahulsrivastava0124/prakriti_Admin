@@ -711,6 +711,26 @@ class SaleForm extends React.Component {
       }
     }
 
+    /* the report charge row and the totals read these, and only
+       calculateProductPrice (the new-sale flow) fills them - take them
+       from the loaded sale, or the return screen shows "4 pics x 0" */
+    const reportCharge = parseFloat(formValues.report_charge) || 0;
+    /* a certified piece already returned took its report charge back with it */
+    const returnedCertified = formValues.products.filter(
+      (p) => p.is_return && p.certificate_no,
+    ).length;
+    formValues.report_qty = Math.max(
+      0,
+      (parseFloat(formValues.report_qty) || 0) - returnedCertified,
+    );
+    const reportTotal = formValues.report_qty * reportCharge;
+    const reportTax =
+      (reportTotal * (parseFloat(formValues.report_tax_percentage) || 0)) / 100;
+    formValues.report_charge_amount = reportCharge;
+    formValues.total_report_charge_amount = reportTotal;
+    formValues.total_report_charge_tax_amount = reportTax;
+    formValues.total_report_charge_amount_after_tax = reportTotal + reportTax;
+
     if (parseFloat(formValues.discount) > 0) {
       console.log("total_products", total_products);
 
@@ -5858,11 +5878,24 @@ class SaleForm extends React.Component {
                                       style={{ position: "relative" }}
                                     >
                                       {m.material_name} ({m.purity}) {m.weight}{" "}
-                                      {m.unit_name} x {m.rate}
+                                      {m.unit_name} x{" "}
+                                      {/* a return is credited at today's price - show the rate
+                                          actually charged (after discount), not the list rate
+                                          the discount is taken from */}
+                                      {!this.state.isCreateFrom &&
+                                      parseFloat(m.weight) > 0
+                                        ? priceFormat(
+                                            (m.amount - m.discount_amount) /
+                                              parseFloat(m.weight),
+                                          )
+                                        : m.rate}
                                     </div>
 
                                     <div className="products-amount">
-                                      = {m.amount}
+                                      ={" "}
+                                      {!this.state.isCreateFrom
+                                        ? priceFormat(m.amount - m.discount_amount)
+                                        : m.amount}
                                     </div>
                                   </div>
                                 </div>
