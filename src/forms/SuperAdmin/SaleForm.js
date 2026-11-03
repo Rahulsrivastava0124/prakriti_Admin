@@ -7210,6 +7210,37 @@ class SaleForm extends React.Component {
                       </Grid>
                     ) : null}
 
+                    {/* what the customer has paid on this invoice, to weigh the return against */}
+                    <Grid item xs={12} md={12} className="pt-5">
+                      <Grid
+                        container
+                        spacing={2}
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          Paid Amount
+                        </Grid>
+
+                        <Grid item xs={5} md={6} className="pt-0">
+                          <TextField
+                            className="ft-amount"
+                            fullWidth
+                            value={parseFloat(formValues.paid_amount) || 0}
+                            disabled
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  ₹
+                                </InputAdornment>
+                              ),
+
+                              className: "non_disable_text",
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Grid>
+
                     {formValues.due_amount == 0 &&
                     this.state.return_amount_max > 0 ? (
                       <Grid item xs={12} md={12} className="pt-5">
