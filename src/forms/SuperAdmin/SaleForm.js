@@ -3574,6 +3574,13 @@ class SaleForm extends React.Component {
       return acc;
     }, []);
 
+  /* report charge GST shown on its own line on the return page (0 elsewhere,
+     so the create page's GST lines are untouched) */
+  getReturnPageReportTax = () =>
+    this.state.isCreateFrom
+      ? 0
+      : parseFloat(this.state.formValues.total_report_charge_tax_amount) || 0;
+
   handleReturnSelectAll = (checked) => {
     const { formValues, return_products } = this.state;
     const indexes = this.getBulkReturnIndexes();
@@ -6531,13 +6538,9 @@ class SaleForm extends React.Component {
                   <div className="sale-summary-stat is-total">
                     <span>Total</span>
 
-                    {/* the return page reprices at today's rate; the tile keeps the billed total */}
-                    <b>
-                      {!this.state.isCreateFrom &&
-                      !isEmpty(formValues.billed_total_amount)
-                        ? priceFormat(formValues.billed_total_amount)
-                        : formValues.total_amount}
-                    </b>
+                    {/* Price - Dist + Tax, at the same rate as the tiles beside it;
+                        the return page shows the billed total on its own line */}
+                    <b>{formValues.total_amount}</b>
                   </div>
                 </div>
 
@@ -6776,6 +6779,45 @@ class SaleForm extends React.Component {
                       </Grid>
                     </Grid>
 
+                    {/* return page: the report charge's GST on its own line, and the
+                        GST lines below show only the products' share */}
+                    {!this.state.isCreateFrom &&
+                    this.getReturnPageReportTax() > 0 ? (
+                      <Grid item xs={12} md={12} className="pt-5">
+                        <Grid
+                          container
+                          columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+                          spacing={2}
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <span className="tax-text">
+                              Report Tax (
+                              {priceFormat(formValues.report_tax_percentage)}%)
+                            </span>
+                          </Grid>
+
+                          <Grid item xs={5} md={6} className="pt-0">
+                            <TextField
+                              className="ft-amount"
+                              fullWidth
+                              value={priceFormat(this.getReturnPageReportTax(), true)}
+                              disabled
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    ₹
+                                  </InputAdornment>
+                                ),
+
+                                className: "non_disable_text",
+                              }}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Grid>
+                    ) : null}
+
                     {formValues.cgst_tax > 0 ? (
                       <Grid item xs={12} md={12} className="pt-5">
                         <Grid
@@ -6793,7 +6835,10 @@ class SaleForm extends React.Component {
                               label="CGST"
                               variant="outlined"
                               fullWidth
-                              value={formValues.cgst_tax}
+                              value={priceFormat(
+                                formValues.cgst_tax - this.getReturnPageReportTax() / 2,
+                                true,
+                              )}
                               disabled
                               InputProps={{
                                 startAdornment: (
@@ -6825,7 +6870,10 @@ class SaleForm extends React.Component {
                           <Grid item xs={5} md={6} className="pt-0">
                             <TextField
                               fullWidth
-                              value={formValues.sgst_tax}
+                              value={priceFormat(
+                                formValues.sgst_tax - this.getReturnPageReportTax() / 2,
+                                true,
+                              )}
                               disabled
                               InputProps={{
                                 startAdornment: (
@@ -6858,7 +6906,10 @@ class SaleForm extends React.Component {
                             <TextField
                               className="ft-amount"
                               fullWidth
-                              value={formValues.igst_tax}
+                              value={priceFormat(
+                                formValues.igst_tax - this.getReturnPageReportTax(),
+                                true,
+                              )}
                               disabled
                               InputProps={{
                                 startAdornment: (
@@ -7318,7 +7369,7 @@ class SaleForm extends React.Component {
                         className="display_center justify-content-end"
                       >
                         <Grid item xs={4} md={6} className="text-right pt-0">
-                          Paid Amount
+                          Received Amount
                         </Grid>
 
                         <Grid item xs={5} md={6} className="pt-0">

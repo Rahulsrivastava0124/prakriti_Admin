@@ -146,8 +146,8 @@ export const salesStatusChange = (id, data) => {
 }
 export const salesEdit = (id) => {
     return (dispatch) => {
-        /* current=1: the return page credits gold at today's rate */
-        axios.get(`/superadmin/sales/edit/${id}`, { params: { current: 1 } })
+        /* no current=1: a return is credited at the rate the sale was made at */
+        axios.get(`/superadmin/sales/edit/${id}`)
         .then(response => {
             console.log(response.data.data)
             if(response.data.success){
