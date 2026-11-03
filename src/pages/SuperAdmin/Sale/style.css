@@ -20,9 +20,10 @@
 
 .sale-summary-field {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* label and its box on one line */
+  align-items: center;
   flex: 0 0 auto;
-  gap: 4px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -82,63 +83,7 @@
   cursor: not-allowed;
 }
 
-.sale-summary-stats {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-}
-
-.sale-summary-stat {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  min-width: 92px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: #f5f7fa;
-  text-align: right;
-}
-
-.sale-summary-stat span {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: #6b7280;
-}
-
-.sale-summary-stat b {
-  font-size: 15px;
-  color: #1e2746;
-  white-space: nowrap;
-}
-
-.sale-summary-stat.is-total {
-  background: #1e2746;
-}
-
-.sale-summary-stat.is-total span {
-  color: #b9c0d4;
-}
-
-.sale-summary-stat.is-total b {
-  color: #fff;
-}
-
-.sale-summary-note {
-  display: flex;
-  align-items: center;
-  padding-left: 0;
-  color: #1e2746;
-  cursor: pointer;
-}
-
 @media (max-width: 767px) {
-  .sale-summary-stats {
-    display: none;
-  }
-
   .sale-summary-field {
     flex: 1 1 45%;
     min-width: 130px;
@@ -748,4 +693,47 @@
 .is-returned td {
   text-decoration: line-through;
   opacity: 0.6;
+}
+
+/* notes opener at the top of the totals column */
+.sale-notes-link {
+  cursor: pointer;
+  color: #1E2746;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* bill totals on the discounts' row, placed under the product table's
+   Price / Dist / Total columns (left/width set from the table) */
+.sale-summary-bar {
+  position: relative;
+}
+
+.sale-summary-col {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e2746;
+  white-space: nowrap;
+}
+
+.sale-summary-inline {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e2746;
+  white-space: nowrap;
+}
+
+.sale-summary-inline + .sale-summary-inline {
+  margin-left: 16px;
+}
+
+.sale-summary-col.is-total,
+.sale-summary-inline.is-total {
+  font-weight: 700;
 }

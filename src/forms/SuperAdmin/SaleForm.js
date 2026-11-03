@@ -611,6 +611,43 @@ class SaleForm extends React.Component {
 
   updateIsMobile = () => {
     this.setState({ isMobile: window.innerWidth < 600 });
+    this.measureTotalsCols();
+  };
+
+  priceColRef = React.createRef();
+  distColRef = React.createRef();
+  totalColRef = React.createRef();
+  summaryBarRef = React.createRef();
+
+  /* where the product table's Price / Dist / Total columns sit, relative to the
+     summary bar, so the bill totals on that bar line up under them */
+  measureTotalsCols = () => {
+    const bar = this.summaryBarRef.current;
+    const cols = [this.priceColRef, this.distColRef, this.totalColRef].map((r) => r.current);
+    if (!bar || cols.some((c) => !c)) {
+      if (this.state.totalsCols) this.setState({ totalsCols: null });
+      return;
+    }
+    const barLeft = bar.getBoundingClientRect().left;
+    const at = (c) => {
+      const r = c.getBoundingClientRect();
+      return { left: Math.round(r.left - barLeft), width: Math.round(r.width) };
+    };
+    const [price, dist, totalCol] = cols.map(at);
+    const barWidth = bar.getBoundingClientRect().width;
+    /* table scrolled sideways (phones): the columns are off the bar, so the
+       figures fall back to a plain inline line */
+    const fits = dist.left + dist.width <= barWidth;
+    /* the Total column runs to the table edge - pin the total by its right
+       edge to that column (at least 16px in), so it is never clipped */
+    const total = {
+      right: Math.max(16, Math.round(barWidth - (totalCol.left + totalCol.width))),
+      padding: 0,
+    };
+    const next = fits ? { price, dist, total } : null;
+    if (JSON.stringify(next) !== JSON.stringify(this.state.totalsCols)) {
+      this.setState({ totalsCols: next });
+    }
   };
 
   async componentDidMount() {
@@ -670,6 +707,7 @@ class SaleForm extends React.Component {
     await this.loadProfile();
 
     window.addEventListener("resize", this.updateIsMobile);
+    this.measureTotalsCols();
   }
 
   componentWillUnmount() {
@@ -1334,6 +1372,7 @@ class SaleForm extends React.Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
+    this.measureTotalsCols();
     if (this.state.pendingAdminSelectId) {
       let newlyCreatedUser = _.find(
         this.getUserList(),
@@ -5711,13 +5750,13 @@ class SaleForm extends React.Component {
 
                     <TableCell sx={{ width: 160 }}>Mac Charge</TableCell>
 
-                    <TableCell sx={{ width: "40px" }}>Price</TableCell>
+                    <TableCell sx={{ width: "40px" }} ref={this.priceColRef}>Price</TableCell>
 
-                    <TableCell sx={{ width: "20px" }}>Dist</TableCell>
+                    <TableCell sx={{ width: "20px" }} ref={this.distColRef}>Dist</TableCell>
 
                     <TableCell sx={{ width: "80px" }}>Tax</TableCell>
 
-                    <TableCell sx={{ width: "40px" }}>Total</TableCell>
+                    <TableCell sx={{ width: "40px" }} ref={this.totalColRef}>Total</TableCell>
 
                     {this.state.isCreateFrom ? (
                       <TableCell align="center" sx={{ width: '120px' }}>
@@ -6360,6 +6399,10 @@ class SaleForm extends React.Component {
 
                     <TableBody>
                       <TableRow className="">
+                        {/* matches the header's extra checkbox column (return page),
+                            or every value sat one header to the left */}
+                        {!this.state.isCreateFrom ? <TableCell></TableCell> : null}
+
                         <TableCell className=" "></TableCell>
 
                         {/* <TableCell >
@@ -6445,7 +6488,7 @@ class SaleForm extends React.Component {
             className="materialContainerGrid create-input p-add-product border-radius-0"
           >
             {!this.state.isAssign ? (
-              <Paper elevation={0} className="sale-summary-bar">
+              <Paper elevation={0} className="sale-summary-bar" ref={this.summaryBarRef}>
                 <div className="sale-summary-discounts">
                   {this.state.unique_materials.map((item, index) => (
                     <div className="sale-summary-field" key={index}>
@@ -6516,41 +6559,26 @@ class SaleForm extends React.Component {
                   ) : null}
                 </div>
 
-                <div className="sale-summary-stats">
-                  <div className="sale-summary-stat">
-                    <span>Price</span>
-
-                    <b>{priceFormat(formValues.total_tag_price)}</b>
-                  </div>
-
-                  <div className="sale-summary-stat">
-                    <span>Dist</span>
-
-                    <b>{priceFormat(formValues.product_discount)}</b>
-                  </div>
-
-                  <div className="sale-summary-stat">
-                    <span>Tax</span>
-
-                    <b>{priceFormat(formValues.total_tax)}</b>
-                  </div>
-
-                  <div className="sale-summary-stat is-total">
-                    <span>Total</span>
-
-                    {/* Price - Dist + Tax, at the same rate as the tiles beside it;
-                        the return page shows the billed total on its own line */}
-                    <b>{formValues.total_amount}</b>
-                  </div>
-                </div>
-
-                <div className="sticky-note sale-summary-note">
-                  <i
-                    className="bi bi-pencil-square fs-4"
-                    data-bs-toggle="modal"
-                    data-bs-target="#noteModal"
-                  ></i>
-                </div>
+                {/* bill totals on the discounts' row, each under its own column
+                    of the product table above (Price and Total include the
+                    report charge) */}
+                {(() => {
+                  const cols = this.state.totalsCols;
+                  const cls = cols ? "sale-summary-col" : "sale-summary-inline";
+                  return (
+                    <>
+                      <span className={cls} style={cols ? cols.price : undefined}>
+                        {priceFormat(formValues.total_tag_price)}
+                      </span>
+                      <span className={cls} style={cols ? cols.dist : undefined}>
+                        {priceFormat(formValues.product_discount)}
+                      </span>
+                      <span className={cls + " is-total"} style={cols ? cols.total : undefined}>
+                        {formValues.total_amount}
+                      </span>
+                    </>
+                  );
+                })()}
               </Paper>
             ) : null}
           </Grid>
@@ -6561,23 +6589,7 @@ class SaleForm extends React.Component {
               spacing={2}
               className="mob_responsive_purchase_input"
             >
-              <ul className="sale_total">
-                <li>
-                  Price <span>{priceFormat(formValues.total_tag_price)}</span>
-                </li>
-
-                <li>
-                  Dist <span>{priceFormat(formValues.product_discount)}</span>
-                </li>
-
-                <li>
-                  Tax <span>{displayAmount(formValues.total_tax)}</span>
-                </li>
-
-                <li>
-                  T.Amount <span>{displayAmount(formValues.total_amount)}</span>
-                </li>
-              </ul>
+              {/* Price / Dist / Tax / Total now sit in the totals column */}
             </Grid>
           </Grid>
 
@@ -6743,6 +6755,18 @@ class SaleForm extends React.Component {
                                     />
 
                                 </Grid>*/}
+
+                {/* notes opener, at the top of the totals column */}
+                <Grid item xs={12} className="pt-0 text-right">
+                  <span
+                    className="sale-notes-link"
+                    role="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#noteModal"
+                  >
+                    <i className="bi bi-pencil-square me-1"></i> Notes
+                  </span>
+                </Grid>
 
                 {!isReturn ? (
                   <>
