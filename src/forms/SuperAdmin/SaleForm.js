@@ -435,11 +435,9 @@ class SaleForm extends React.Component {
 
       payNowForReturnDialogOpen: false,
 
-      returnChargeApplyDialogOpen: false,
-
       return_amount: 0,
 
-      // calculated return amount - the most the editable Return Amount may be
+      // what the customer paid - the most the editable Return Amount may be
       return_amount_max: 0,
 
       return_from_wallet: 0,
@@ -2792,12 +2790,6 @@ class SaleForm extends React.Component {
     });
   };
 
-  handleReturnChargeApplyDialogOpen = () => {
-    this.setState({
-      returnChargeApplyDialogOpen: false,
-    });
-  };
-
   returnDialogClose = () => {
     this.setState({
       returnDialogOpen: false,
@@ -3601,9 +3593,20 @@ class SaleForm extends React.Component {
 
       //&& parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
     ) {
-      //return_from_wallet = formValues.paid_amount;
+      /* fully paid: the return amount goes back to the customer, either as
+         advance or refunded to their account */
+      if (parseFloat(this.state.return_amount) > parseFloat(this.state.return_amount_max)) {
+        return this.props.enqueueSnackbar(
+          `Return amount can't be more than ₹${this.state.return_amount_max}.`,
+          { variant: "error" },
+        );
+      }
       this.setState({
-        returnChargeApplyDialogOpen: true,
+        returnDialogOpen: true,
+
+        return_from_wallet: priceFormat(parseFloat(this.state.return_amount) || 0, true),
+
+        payment_type: res.will_return_charge_apply ? "return" : "advance",
       });
     } else if (
       formValues.due_amount == 0 &&
@@ -3693,6 +3696,16 @@ class SaleForm extends React.Component {
 
     if (res.data.success) {
       this.props.enqueueSnackbar(res.data.message, { variant: "success" });
+
+      if (
+        this.state.payment_type == "return" &&
+        parseFloat(this.state.return_from_wallet) > 0
+      ) {
+        this.props.enqueueSnackbar(
+          `Refund of ${displayAmount(this.state.return_from_wallet)} will be credited to your account within 7 working days.`,
+          { variant: "info", autoHideDuration: 8000 },
+        );
+      }
 
       this.props.actions.getNotifiactions();
 
@@ -4166,10 +4179,16 @@ class SaleForm extends React.Component {
       return_from_wallet: priceFormat(return_from_wallet, true),
     });
 
+    /* a fully paid bill can't refund more than the customer paid */
+    let return_amount_max = priceFormat(parseFloat(formValues.paid_amount) || 0, true);
+    if (parseFloat(formValues.due_amount) == 0 && return_amount > return_amount_max) {
+      return_amount = return_amount_max;
+    }
+
     this.setState({
       return_amount: priceFormat(return_amount, true),
 
-      return_amount_max: priceFormat(return_amount, true),
+      return_amount_max: return_amount_max,
 
       product_amount: priceFormat(product_amount, true),
 
@@ -6479,7 +6498,13 @@ class SaleForm extends React.Component {
                   <div className="sale-summary-stat is-total">
                     <span>Total</span>
 
-                    <b>{formValues.total_amount}</b>
+                    {/* the return page reprices at today's rate; the tile keeps the billed total */}
+                    <b>
+                      {!this.state.isCreateFrom &&
+                      !isEmpty(formValues.billed_total_amount)
+                        ? priceFormat(formValues.billed_total_amount)
+                        : formValues.total_amount}
+                    </b>
                   </div>
                 </div>
 
@@ -7023,6 +7048,43 @@ class SaleForm extends React.Component {
                       </Grid>
                     ) : null}
 
+                    {!isEmpty(formValues.billed_total_amount) ? (
+                      <Grid item xs={12} md={12} className="pt-5">
+                        <Grid
+                          container
+                          spacing={2}
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            Billed Amount
+                          </Grid>
+
+                          <Grid item xs={5} md={6} className="pt-0">
+                            <TextField
+                              className="ft-amount"
+                              fullWidth
+                              /* billed total less the discount shown below */
+                              value={priceFormat(
+                                (parseFloat(formValues.billed_total_amount) || 0) -
+                                  (parseFloat(this.state.return_discount) || 0),
+                                true,
+                              )}
+                              disabled
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    ₹
+                                  </InputAdornment>
+                                ),
+
+                                className: "non_disable_text",
+                              }}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Grid>
+                    ) : null}
+
                     <Grid item xs={12} md={12} className="pt-5">
                       <Grid
                         container
@@ -7037,9 +7099,14 @@ class SaleForm extends React.Component {
                           <TextField
                             className="ft-amount"
                             fullWidth
-                            value={
-                              this.state.product_amount_without_report_charge
-                            }
+                            /* billed amount less its share of the discount (display only) */
+                            value={priceFormat(
+                              (parseFloat(
+                                this.state.product_amount_without_report_charge,
+                              ) || 0) -
+                                (parseFloat(this.state.return_discount) || 0),
+                              true,
+                            )}
                             disabled
                             InputProps={{
                               startAdornment: (
@@ -7270,7 +7337,6 @@ class SaleForm extends React.Component {
                                 }
                                 this.setState({ return_amount: e.target.value });
                               }}
-                              helperText={`Max ₹${this.state.return_amount_max}`}
                               InputProps={{
                                 startAdornment: (
                                   <InputAdornment position="start">
@@ -8607,47 +8673,6 @@ class SaleForm extends React.Component {
                 Ok
               </Button>
             </Stack>
-          </DialogActions>
-        </Dialog>
-
-        <Dialog
-          open={this.state.returnChargeApplyDialogOpen}
-          onClose={this.handleReturnChargeApplyDialogOpen}
-          fullWidth
-          maxWidth="xs"
-          className="ratn-dialog-wrapper"
-        >
-          <DialogTitle>Payable amount!</DialogTitle>
-
-          <DialogContent>
-            <DialogContentText id="alert-dialog-slide-description">
-              {`Total payable amount will be : ${this.state.return_amount}. Will receive within 7 working days as per company policy.`}
-            </DialogContentText>
-          </DialogContent>
-
-          <DialogActions>
-            {!submitting ? (
-              <Stack spacing={2} direction="row" justifyContent="flex-end">
-                <Button
-                  variant="outlined"
-                  onClick={this.handleReturnChargeApplyDialogOpen}
-                >
-                  Cancel
-                </Button>
-
-                <Button
-                  variant="contained"
-                  type="button"
-                  onClick={this.handleReturnConfirm}
-                >
-                  Yes, Confirm
-                </Button>
-              </Stack>
-            ) : (
-              <Stack spacing={2} direction="row" justifyContent="flex-end">
-                <CircularProgress size="30px" />
-              </Stack>
-            )}
           </DialogActions>
         </Dialog>
 
